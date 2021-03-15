@@ -5,7 +5,7 @@ from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = "./files"
+app.config['UPLOAD_FOLDER'] = "./files/"
 ALLOWED_EXTENSIONS = {'jpg'}
 HEIGHT_A4 = 1123
 WIDE_A4 = 796
@@ -22,52 +22,51 @@ def uploader():
         if request.method == "POST":
             if 'image' in request.files:
                 file = request.files['image']
-                filename = secure_filename(file.filename)
-                if file and allowed_file(file.filename):
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/" + file.filename)
-                    orientation, new_size = resize_image(image)
-                    # orientation, new_size = resize_image(file.filename)
-                    wide, height = new_size[0:2]
-                    data = {
-                        "statusCode": "200",
-                        "response": {
-                            "mensaje": "La imagen se proceso exitosamente!",
-                            "datos": {
-                                "orientacion": orientation,
-                                "alto": height,
-                                "ancho": wide
+                if file.filename:
+                    filename = secure_filename(file.filename)
+                    if file and allowed_file(file.filename):
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+                        image = cv2.imread(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+                        orientation, newSize = resize_image(image)
+                        wide, height = newSize[0:2]
+                        data = {
+                            "statusCode": "200",
+                            "response": {
+                                "mensaje": "La imagen se proceso exitosamente!",
+                                "datos": {
+                                    "orientacion": orientation,
+                                    "alto": height,
+                                    "ancho": wide
+                                }
                             }
                         }
-                    }
-                else:
-                    data = {
-                        "statusCode": "200",
-                        "response": {
-                            "mensaje": "El formato de la imagen no es valido!",
-                        }
-                    }
-            else:
-                data = {
-                    "statusCode": "200",
-                    "response": {
-                        "mensaje": "El key enviado debe ser image",
-                    }
-                }
 
-        # show_image(orientation, height, wide)
-        # save_resize_image(orientation, height, wide)
+                        # show_image(orientation, height, wide)
+                        # save_resize_image(orientation, height, wide)
+                    else:
+                        raise TypeError
+                else:
+                    raise ValueError
+            else:
+                raise ValueError
 
         return data
 
-    except:
+    except ValueError:
         data = {
-            "statusCode": "500",
+            "statusCode": "200",
             "response": {
-                "mensaje": "lo sentimos! su solicitud no fue posible tramitarla",
+                "mensaje": "Por favor revisa el Key o el archivo adjunto",
             }
         }
-
+        return data
+    except TypeError:
+        data = {
+            "statusCode": "415",
+            "response": {
+                "mensaje": "El formato de la imagen no es valido!",
+            }
+        }
         return data
 
 
@@ -132,15 +131,14 @@ def show_image(orientation, height, wide):
 
     cv2.imshow('image', new_image)
     cv2.waitKey(0)
-    return
 
 
 # function to save a sketch of how the resized image is displayed on the A4 size sheet
 def save_resize_image(orientation, height, wide):
     if orientation == "Horizontal":
-        new_image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/a4_v.jpg")
-    else:
         new_image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/a4_H.jpg")
+    else:
+        new_image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/a4_V.jpg")
     cv2.rectangle(new_image, (0, 0), (wide, height), (0, 0, 255), 5)
     cv2.imwrite(app.config['UPLOAD_FOLDER'] + "/newImage.jpg", new_image)
     return print("Save Image")
