@@ -25,7 +25,9 @@ def uploader():
                 filename = secure_filename(file.filename)
                 if file and allowed_file(file.filename):
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    orientation, new_size = resize_image(file.filename)
+                    image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/" + file.filename)
+                    orientation, new_size = resize_image(image)
+                    # orientation, new_size = resize_image(file.filename)
                     wide, height = new_size[0:2]
                     data = {
                         "statusCode": "200",
@@ -71,8 +73,7 @@ def uploader():
 
 # function to extract data from image (orientation, height and width)
 def extract_data(file):
-    image = cv2.imread(app.config['UPLOAD_FOLDER'] + "/" + file)
-    height, wide = image.shape[0:2]
+    height, wide = file.shape[0:2]
     if height == wide:
         orientation_image = "Cuadrada"
     elif height > wide:
